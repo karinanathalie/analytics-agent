@@ -1,0 +1,130 @@
+------------------------------------------------------------------------------
+  qPython 2.0.0 [2019.01.01]
+------------------------------------------------------------------------------
+
+  - INCOMPATIBILITY Renamed QConnection.sync and QConnection.async to 
+    QConnection.sendSync and QConnection.sendAsync resp.,
+    because of 'async' becoming a keyword in Python 3.7
+  - replaced DataFrame.as_matrix() method (deprecated since Pandas 0.23.0) by 
+    DataFrame.values
+  - replaced numpy.fromstring method (deprecated since NumPy 1.14) by 
+    numpy.frombuffer
+
+------------------------------------------------------------------------------
+  qPython 1.3.0 [2017.03.xx]
+------------------------------------------------------------------------------
+
+  - Add support for Python 3.5 and 3.6. Drop support for Python 3.3
+  - Fix: serialization of 0n in generic lists
+
+------------------------------------------------------------------------------
+  qPython 1.2.2 [2016.09.21]
+------------------------------------------------------------------------------
+
+  - Fix: Pandas deserialization of single row tables with string nulls
+
+------------------------------------------------------------------------------
+  qPython 1.2.1 [2016.03.29]
+------------------------------------------------------------------------------
+
+  - Fix: QConnection.close() frees linked file object
+
+------------------------------------------------------------------------------
+  qPython 1.2.0 [2016.01.22]
+------------------------------------------------------------------------------
+
+  - API redesign: enable custom serializers & deserializers
+
+------------------------------------------------------------------------------
+  qPython 1.1.0 [2015.11.25]
+------------------------------------------------------------------------------
+
+  - Compatibility with Python 2.7, 3.3, and 3.4
+
+------------------------------------------------------------------------------
+  qPython 1.0.2 [2015.09.03]
+------------------------------------------------------------------------------
+
+  - Enhancement: configuration of serialization for single element strings
+
+------------------------------------------------------------------------------
+  qPython 1.0.1 [2015.08.11]
+------------------------------------------------------------------------------
+
+  - Fix: serialization of indexed Pandas.DataFrames
+
+------------------------------------------------------------------------------
+  qPython 1.0.0 [2015.04.10]
+------------------------------------------------------------------------------
+
+  - Improve type detection for pandas.Series serialization
+
+------------------------------------------------------------------------------
+  qPython 1.0 RC3 [2015.04.09]
+------------------------------------------------------------------------------
+
+  - Fix: bug during handshake with blank username/password
+
+------------------------------------------------------------------------------
+  qPython 1.0 RC2 [2015.01.19]
+------------------------------------------------------------------------------
+
+  - Fix: handling of nested lists of homogeneous length
+  - Fix: pandas: null representation for strings
+
+------------------------------------------------------------------------------
+  qPython 1.0 RC1 [2014.10.22]
+------------------------------------------------------------------------------
+
+  - Introduce support for pandas
+
+------------------------------------------------------------------------------
+  qPython 1.0 Beta 6 [2014.10.16]
+------------------------------------------------------------------------------
+
+  - Configurable deserialization for temporal vectors
+  - numpy datetime64/timedelta64 vectors ans atoms are now serializable without
+    explicit conversions
+  - QTemporal: null values are now backed as numpy NaT
+  - Fix: error handling while initializing connection
+  - Fix: sanity check against protocol version for guids
+  - Fix: socket timeout in qwriter
+
+------------------------------------------------------------------------------
+  qPython 1.0 Beta 5 [2014.10.01]
+------------------------------------------------------------------------------
+
+  - Redesign lambdas and projections handling
+  - Rework collections API
+  - Extend QConnection class with context manager API
+  - Fix: reading of generic null (::) embedded in lists
+  - Fix: sending generic lists as columns in tables
+
+------------------------------------------------------------------------------
+  qPython 1.0 Beta 4 [2014.07.04]
+------------------------------------------------------------------------------
+
+  - qtemporallist: force numpy.array type conversion in case of mismatch between
+    meta.qtype and dtype of raw list
+  - Enable Travis CI integration
+  - Update project meta-information
+
+------------------------------------------------------------------------------
+  qPython 1.0 Beta 3 [2014.05.26]
+------------------------------------------------------------------------------
+
+  - Fix: creation of q dictionary with values represented as table
+
+------------------------------------------------------------------------------
+  qPython 1.0 Beta 2 [2014.05.12]
+------------------------------------------------------------------------------
+
+  - Speed improvement for pure python uncompress
+  - Added (optional) Cython module for best performance of uncompress
+
+------------------------------------------------------------------------------
+  qPython 1.0 Beta [2014.04.02]
+------------------------------------------------------------------------------
+
+  - Support for kdb+ protocol and types: v3.0, v2.6, v<=2.5
+  - Synchronous and asynchronous queries
