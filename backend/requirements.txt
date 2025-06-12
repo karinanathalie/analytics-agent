@@ -6,4 +6,5 @@ pydantic
 langchain
 langchain-openai
 python-dotenv
-numpy
+pandas
+numpy==1.23.5
