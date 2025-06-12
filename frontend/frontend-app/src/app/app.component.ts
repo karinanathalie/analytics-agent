@@ -28,7 +28,7 @@ export class AppComponent {
     this.error = '';
     this.result = null;
 
-    this.http.post<any>('http://127.0.0.1:8000/ask', { user_query: this.userQuery }).subscribe({
+    this.http.post<any>('http://127.0.0.1:8000/agent', { user_query: this.userQuery }).subscribe({
       next: (data) => {
         this.result = data.result;
         this.loading = false;

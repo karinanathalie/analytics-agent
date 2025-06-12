@@ -1,94 +1,133 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from qpython import qconnection
-from langchain_ollama import ChatOllama
-import numpy as np
+from dotenv import load_dotenv
+from langchain.agents import initialize_agent, Tool
+from langchain_openai import ChatOpenAI
+import pandas as pd
+import smtplib
+from email.message import EmailMessage
+import tempfile
+
+# Load .env variables
+load_dotenv()
 
 app = FastAPI()
+
+# CORS for Frontend Connections
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], allow_credentials=True,
-    allow_methods=["*"], allow_headers=["*"],
+    allow_origins = ["*"],
+    allow_credentials = True,
+    allow_methods = ["*"],
+    allow_headers = ["*"],
 )
 
+# Connect to Q server
 q = qconnection.QConnection(host="localhost", port=6000)
 q.open()
-llm = ChatOllama(model="llama3.2")
 
+# Load OpenAI LLM via LangChain
+llm = ChatOpenAI(openai_api_key=os.environ["OPENAI_API_KEY"], model="gpt-4o")
+
+# Converts q table to JSON with columns/rows
+def qtable_to_json(qtable):
+    columns = qtable.keys()
+    rows = list(zip(*qtable.values()))
+    # decode bytes to string if necessary
+    rows = [[cell.decode() if isinstance(cell, bytes) else cell for cell in row] for row in rows]
+    return {"columns": columns, "rows": rows}
+
+# Tool 1: Run Q Query
+def run_q_query(q_query: str) -> dict:
+    try:
+        result = q.sendSync(q_query)
+        return qtable_to_json(result)
+    except Exception as e:
+        return {"error": str(e)}
+
+# Tool 2: Explain Q Query
+def explain_q_query(q_query: str) -> str:
+    prompt = f"Explain in simple English what this Q query does:\n{q_query}"
+    return llm.invoke(prompt).content.strip()
+
+# Tool 3: Table to CSV
+def table_to_csv(table_json: dict) -> str:
+    df = pd.DataFrame(table_json["rows"], columns=table_json["columns"])
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv", mode="w", encoding='utf-8') as tmp:
+        df.to_csv(tmp.name, index=False)
+        tmp.flush()
+        tmp.seek(0)
+        return tmp.read()
+
+# Tool 4: Summarize Table
+def summarize_table(table_json: dict) -> str:
+    prompt = f"Summarize this trade table:\nColumns: {table_json['columns']}\nRows: {table_json['rows']}"
+    return llm.invoke(prompt).content.strip()
+
+# Tool 5: Send Email with Attachment
+def send_email_with_attachment(to_email: str, subject: str, body: str, csv_content: str) -> str:
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = os.environ["EMAIL_USER"]
+    msg["To"] = to_email
+    msg.set_content(body)
+
+    # Attach CSV
+    msg.add_attachment(csv_content, filename="trade_results.csv", subtype="csv", maintype="text")
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(os.getenv('EMAIL_USER'), os.getenv('EMAIL_PASS'))
+            smtp.send_message(msg)
+        return f"Email sent to {to_email}"
+    except Exception as e:
+        return f"Failed to send email: {str(e)}"
+
+# Agent Tools 
+tools = [
+    Tool(
+        name="run_q_query",
+        func=run_q_query,
+        description="Run a KDB+/Q query and return results as a table (JSON: columns/rows). Input: Q code string"
+    ),
+    Tool(
+        name="explain_q_query",
+        func=explain_q_query,
+        description="Explain what a KDB+/Q query does in simple English. Input: Q code string"
+    ),
+    Tool(
+        name="table_to_csv",
+        func=table_to_csv,
+        description="Convert a Q table (JSON format) to CSV format. Input: Table as JSON"
+    ),
+    Tool(
+        name="summarize_table",
+        func=summarize_table,
+        description="Summarize a trade table (columns/rows JSON) in English. Input: Table as JSON"
+    ),
+    Tool(
+        name="send_email_with_attachment",
+        func=send_email_with_attachment,
+        description="Send table (CSV string) to an email address. Input: email, subject, body, csv_content"
+    )
+]
+
+# LangChain Agent
+agent = initialize_agent(
+    tools=tools,
+    llm=llm,
+    agent="openai-functions",
+    verbose=True,
+)
+
+# API INput Model
 class QueryRequest(BaseModel):
     user_query: str
 
-def get_q_query_from_llm(user_query: str) -> str:
-    prompt = (
-        "You are an expert in KDB+/Q for financial analytics.\n"
-        "The table is named `trade` and has columns: time, sym, algo, volume, price, date, slippage.\n"
-        "Given the user's request in English, respond with ONLY a valid Q query, nothing else.\n"
-        "Never use '*' in select. Use: select from trade where ...\n"
-        "If the user wants all columns, use: select from trade where ...\n"
-        "If user asks for columns, use: select col1, col2 from trade where ...\n"
-        f"User: {user_query}\nQ:"
-    )
-    response = llm.invoke(prompt)
-    content = response.content.strip().splitlines()[0].strip()
-    print("LLM Q query:", content)
-    return content
-
-
-def log_query_to_file(q_query: str, path: str = "trade.q"):
-    """Append the Q query to trade.q for auditing"""
-    with open(path, "a") as f:
-        f.write(q_query + "\n")
-
-def qtable_to_json(qtable):
-    import numpy as np
-    # Handle dict (typical table)
-    if isinstance(qtable, dict) and qtable:
-        columns = list(qtable.keys())
-        n = len(qtable[columns[0]])
-        rows = []
-        for i in range(n):
-            row = []
-            for col in columns:
-                val = qtable[col][i]
-                if isinstance(val, np.generic):
-                    val = val.item()
-                row.append(val)
-            rows.append(row)
-        return {"columns": columns, "rows": rows}
-    # Handle numpy structured arrays (list of tuples)
-    elif hasattr(qtable, "dtype") and hasattr(qtable, "tolist"):
-        # Convert structured numpy array to list of rows and columns
-        try:
-            arr = qtable
-            columns = arr.dtype.names
-            rows = arr.tolist()
-            # Clean bytes to strings for display
-            rows_clean = []
-            for row in rows:
-                new_row = [x.decode() if isinstance(x, bytes) else x for x in row]
-                rows_clean.append(new_row)
-            return {"columns": list(columns), "rows": rows_clean}
-        except Exception as e:
-            return {"text": str(qtable)}
-    # Otherwise, fallback to text
-    else:
-        return {"text": str(qtable)}
-
-
-@app.post("/ask")
-async def ask(request: QueryRequest):
+@app.post("/agent")
+async def agentic_query(request: QueryRequest):
     user_query = request.user_query
-    q_query = get_q_query_from_llm(user_query)
-    print("query:", q_query)
-    
-    # Log the LLM-generated Q query
-    log_query_to_file(q_query)
-
-    try:
-        result = q.sendSync(q_query)
-        json_result = qtable_to_json(result)
-        print("result:", result)
-        return {"query": q_query, "result": json_result}
-    except Exception as e:
-        return {"error": str(e)}
+    result = agent.run(user_query)
+    return {"result": result}
