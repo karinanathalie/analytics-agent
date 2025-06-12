@@ -30,14 +30,11 @@ class QueryRequest(BaseModel):
 # LLM Prompt
 def get_q_query_from_llm(user_query: str) -> str:
     prompt = ("""You are an expert in KDB+/Q for financial analytics.
-              The table is named `trade` and has columns: time, sym, algo, volume, price, date, slippage.
-              Given the user's English request, respond with only a valid KDB+/Q query.
-              Always start with `select from trade` and use the columns provided.
-              User: {user_query}
-              QL select from trade where volume > 1000\n"""
+              The table is named `trade` and has columns: time, sym, algo, volume, price, date, slippage."""
               f"User: {user_query} Q:")
     response = llm.invoke(prompt)
     content = response.content.strip()
+    print(content)
     return content
 
 # Fast API Route

@@ -1,12 +1,42 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
+import { CommonModule} from '@angular/common';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  standalone: true,
+  imports: [ FormsModule, CommonModule],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
+  styleUrls: ['./app.component.css'],
 })
 export class AppComponent {
-  title = 'frontend-app';
+  title = 'Analytics Agent';
+  userQuery = '';
+  response : any = null;
+  loading = false;
+  error = '';
+
+  constructor(private http: HttpClient) {}
+
+  ask() {
+    if (!this.userQuery) {
+      this.error = 'Please enter your question.';
+      return;
+    }
+    this.loading = true;
+    this.error = '';
+    this.response = null;
+
+    this.http.post<any>('http://127.0.0.1:8000/ask', { user_query: this.userQuery }).subscribe({
+      next: (data) => {
+        this.response = data;
+        this.loading = false;
+      },
+      error: (err) => {
+        this.error = 'Error contacting backend: ' + (err?.message || err);
+        this.loading = false;
+      }
+    });
+  }
 }
