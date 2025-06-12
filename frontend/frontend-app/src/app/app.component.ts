@@ -13,7 +13,7 @@ import { CommonModule} from '@angular/common';
 export class AppComponent {
   title = 'Analytics Agent';
   userQuery = '';
-  response : any = null;
+  result : any = null;
   loading = false;
   error = '';
 
@@ -26,11 +26,11 @@ export class AppComponent {
     }
     this.loading = true;
     this.error = '';
-    this.response = null;
+    this.result = null;
 
     this.http.post<any>('http://127.0.0.1:8000/ask', { user_query: this.userQuery }).subscribe({
       next: (data) => {
-        this.response = data;
+        this.result = data.result;
         this.loading = false;
       },
       error: (err) => {
