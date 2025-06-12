@@ -1,10 +1,1 @@
-trade:flip `time`sym`algo`volume`price`date`slippage!
-(
-    (09:00 09:10 09:20);
-    `AAPL`MSFT`GOOG;
-    `ABC`XYZ`DEF;
-    1000 2000 3000;
-    145.2 155.6 170.1;
-    2024.04.01 2024.04.05 2024.04.09;
-    0.2 0.1 0.3
-)
+trade:flip `time`sym`algo`volume`price`date`slippage!((09:00 09:10 09:20); `AAPL`MSFT`GOOG; `ABC`XYZ`DEF; 1000 2000 3000; 145.2 155.6 170.1; 2024.04.01 2024.04.05 2024.04.09; 0.2 0.1 0.3)

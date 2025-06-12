@@ -3,3 +3,5 @@ uvicorn
 qpython 
 openai 
 pydantic
+langchain
+langchain_community
